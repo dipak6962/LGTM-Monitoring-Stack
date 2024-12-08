@@ -1,0 +1,117 @@
+grafana:
+  defaultDashboardsTimezone: ist
+  assertNoLeakedSecrets: false
+  additionalDataSources:
+    - name: Loki
+      access: proxy
+      type: loki
+      url: "http://loki-gateway.monitoring.svc.cluster.local:80/"
+      editable: true
+      jsonData:
+        derivedFields:
+          - datasourceName:
+            datasourceUid: "Tempo"
+            matcherRegex: '"trace_id":\s*"(\w+)"'
+            name: TraceID
+            url: $${__value.raw}
+    - name: Tempo
+      access: proxy
+      type: tempo
+      url: "http://tempo.monitoring.svc.cluster.local:3100/"
+      editable: true
+      jsonData:
+        tracesToLogsV2:
+          datasourceUid: "Loki"
+          tags: [{ key: "service.name", value: "service_name" }]
+          filterByTraceID: true
+          filterBySpanID: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      provider:
+        name: sidecarProvider
+        orgid: 1
+        folder: ""
+        type: file
+        disableDelete: false
+        allowUiUpdates: true
+        foldersFromFilesStructure: true
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: "default"
+          orgId: 1
+          folder: "FastAPI Dashboads"
+          type: file
+          disableDeletion: true
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboardsConfigMaps:
+    default: "custom-dashboards-configmap"
+
+  # persistence:
+  #   enabled: true
+  #   type: pvc
+  #   storageClassName: default
+  #   accessModes:
+  #     - ReadWriteOnce
+  #   size: 20Gi
+  #   finalizers:
+  #     - kubernetes.io/pvc-protection
+
+  grafana.ini:
+    users:
+      default_theme: dark
+    sso_settings:
+      configurable_providers: azuread
+    # security:
+      # cookie_secure: true  # This makes sure cookies are only sent over HTTPS
+
+    auth.azuread:
+      name: Microsoft
+      icon: Microsoft
+      enabled: true
+      allow_sign_up: true
+      auto_login: false
+      client_id: 
+      client_secret: 
+      allowed_organizations: 
+      auth_url:
+      token_url: 
+
+    # auth.generic_oauth:
+    #   auto_login: true #Set to true to attempt login with specific OAuth provider automatically, skipping the login screen. This setting is ignored if multiple auth providers are configured to use auto login. Defaults to false
+
+    # auth.proxy:
+    #   enabled: true
+    #   auto_sign_up: true
+    #   header_name: X-WEBAUTH-USER
+    #   header_property: username
+    #   sync_ttl: 15
+    #   whitelist:
+    #   headers:
+    #   headers_encoded: false
+    #   enable_login_token: false
+
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs:
+      - job_name: "mongodb-metrics"
+        static_configs:
+          - targets: [""]
+      - job_name: "mongodb-metrics"
+        static_configs:
+          - targets:
+              [""]
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: nfs-csi
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+        selector: {}

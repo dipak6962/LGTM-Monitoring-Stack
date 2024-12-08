@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-dashboards-configmap
+  labels:
+    grafana_dashboard: "true"  # This label identifies the ConfigMap as a Grafana dashboard
+  annotations:
+    k8s-sidecar-target-directory: "/tmp/dashboards/"  # This specifies the target directory for the sidecar
+data:
+  my-custom-dashboard.json: |-
+    {
+      
+    }
+  my-custom-dashboard2.json: |-
+    {
+      
+    }
